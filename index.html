@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+    @font-face {
+      font-family: GillSans;
+      src: url('http://zarkonnen.com/static/bumble/media/uploads/GillSansMTPro-Light.otf');
+    }
+    
+    body {
+      font-family: GillSans, Verdana;
+      font-size: 13pt;
+      line-height: 140%;
+      font-weight: 100;
+      background: #eeeeee;
+      background-image: url('bg.png');
+      background-repeat: no-repeat;
+    }
+
+    img {
+      border: 0;
+    }
+
+    p {
+      margin-top: 0;
+      margin-bottom: 1em;
+    }
+
+    #page {
+      margin: auto;
+      width: 802px;
+      padding: 20px;
+      padding-top: 40px;
+      background: rgba(255, 255, 255, 0.3);
+      position: relative;
+    }
+
+    a {
+      color: #dd0000;
+      text-decoration: none;
+    }
+
+    a:visited {
+      color: #bb0000;
+    }
+
+    a:hover {
+      color: #ff0000;
+      text-decoration: underline;
+    }
+
+    a:active {
+      color: #ff0000;
+      text-decoration: underline;
+    }
+    
+    .a_title {
+        display: block;
+    }
+    
+    .a_date {
+        color: #999999;
+    }
+    
+    td {
+        vertical-align: top;
+    }
+    </style>
+</head>
+<body>
+    <script type="text/javascript">
+        //setTimeout(function() { location.reload(); }, 10000000);
+        String.prototype.endsWith = function(suffix) {
+            return this.indexOf(suffix, this.length - suffix.length) !== -1;
+        };
+    </script>
+    
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script type="text/javascript" src="jquery.js"></script>
+    <div id="page">
+        <table border="0" cellpadding="0">
+            <tr>
+                <td class="calendar" id="mycal" width="400"></td>
+                <td class="calendar" id="rcal" width="400"></td>
+            </td>
+        </table>
+        <script type="text/javascript">
+            function parseFeedResults(result, id) {
+                $('#' + id).html('');
+                result.feed.entries.forEach(function(e) {
+                    try {
+                        e.date = e.contentSnippet.split("\n")[0].split("&nbsp;")[0].split("When: ")[1].split(" to ")[0];
+                        e.date = e.date.split(" ");
+                        e.date = e.date.map(function(v) {
+                            v = v.replace("am", ":00");
+                            if (v.endsWith("pm")) {
+                                v = (parseInt(v.replace("pm", "")) + 12) + ":00";
+                            }
+                            return v;
+                        });
+                        e.date = e.date.join(" ");
+                        e.date = Date.parse(e.date);
+                    } catch (e) {
+                        e.date = 0;
+                    }
+                });
+                var now = new Date().getTime();
+                var inAMonth = now + 1000 * 3600 * 24 * 31;
+                result.feed.entries = result.feed.entries.filter(function(e) {
+                    return e.date >= now && e.date <= inAMonth;
+                });
+                result.feed.entries = result.feed.entries.sort(function(a, b) { return (a.date || 0) - (b.date || 0); });
+                result.feed.entries.forEach(function(e) {
+                    var date = new Date(e.date);
+                    var d = (date.getDate() + "/" + (date.getMonth() + 1) + "/" + date.getFullYear()) + ", " + date.toLocaleTimeString();
+                    d = d.substring(0, d.length - 14);
+                    $('#' + id).append('<div class="a_entry"><span class="a_title">' + e.title + '</span><span class="a_date">' + d + '</span></div>'); 
+                });
+            }
+            google.load("feeds", "1");
+            function initialize() {
+                var myfeed = new google.feeds.Feed("[INSERT YOUR PRIVATE GCAL XML FEED URL HERE]");
+                myfeed.setNumEntries(100);
+                myfeed.load(function(r) { parseFeedResults(r, "mycal"); });
+                setInterval(function() { myfeed.load(function(r) { parseFeedResults(r, "mycal"); }); }, 600000);
+                
+                var rfeed = new google.feeds.Feed("[INSERT YOUR PRIVATE GCAL XML FEED URL HERE]");
+                rfeed.setNumEntries(100);
+                rfeed.load(function(r) { parseFeedResults(r, "rcal"); });
+                setInterval(function() { rfeed.load(function(r) { parseFeedResults(r, "rcal"); }); }, 600000);
+            }
+            google.setOnLoadCallback(initialize);
+        </script>
+    </body>
+</html>
